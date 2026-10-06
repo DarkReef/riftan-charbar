@@ -1,4 +1,4 @@
-# Riftan Charbar 0.1.0
+# Riftan Charbar 0.1.1
 
 Отдельный модуль Foundry VTT 14 для Apex Heresy (`dark-heresy`, версия 1.4.2+ с API v1). Панель персонажей, состояния и запросы проверок. Item Piles и ItemPileFFG для основной работы не нужны.
 
@@ -29,9 +29,9 @@ await game.modules.get('riftan-charbar').api.requestChecks({
 
 ## Разработка
 
-Исходники: `modules/riftan-charbar`. Сборка обоих пакетов: `npm run modules:build`. Проверки: `npm test`. Модуль имеет собственные языковые файлы, CSS, пространство флагов и API; он не импортирует код второго пакета или файлы из `systems/`.
+Исходники модуля находятся в этом репозитории. Проверки: `npm test`. Модуль имеет собственные языковые файлы, CSS, пространство флагов и API; он не импортирует код второго пакета или файлы из `systems/`.
 
-Версия 0.1.0 предназначена для тестирования. Проверены автоматические тесты и DOM с имитацией Foundry; реальный мир Foundry 14 с мастером и игроком ещё не проверен. Броски клиентов и их локальные очереди не являются серверной блокировкой одновременных действий.
+Версия 0.1.1 содержит актуальную инструкцию публичной установки; механика панели не менялась. Проверены автоматические тесты и DOM с имитацией Foundry; реальный мир Foundry 14 с мастером и игроком ещё не проверен. Броски клиентов и их локальные очереди не являются серверной блокировкой одновременных действий.
 
 Основано на коде Apex Heresy, автор Apex; выделение и доработка — DarkReef. Лицензия GPL-3.0, полный текст в `LICENSE`. Исходники опубликованы вместе с релизом в этом репозитории.
 
@@ -42,10 +42,12 @@ Run `npm test` in this repository. The system is installed separately.
 The manual release workflow creates a draft release with this module only.
 Live multiplayer validation against the new system build is still pending.
 
-## Private repository distribution
+## Установка из публичного репозитория
 
-This repository is private. Release URLs require GitHub access and are not public
-Foundry installation endpoints. Releases have not been published yet. After a
-release is approved, download its module ZIP while signed in to GitHub and extract
-it into `Data/modules/riftan-charbar`, with `module.json` directly in that folder.
-Do not embed access tokens in manifests or installation URLs.
+В Foundry → Add-on Modules → Install Module вставьте URL манифеста:
+
+```text
+https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json
+```
+
+Манифест и ZIP доступны без авторизации. Для обновления используйте штатную проверку обновлений Foundry. Рекомендуемая система — Apex Heresy RU 1.5.3; система устанавливается отдельно.
