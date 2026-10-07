@@ -15,3 +15,5 @@
 .dh-party-request div { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
 .dh-party-request button { width: auto; }
 @media (max-width: 600px) { .dh-party-roster article, .dh-inventory-row { flex-wrap: wrap; } }
+
+.riftan-token-weapons{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);width:220px;display:grid;gap:5px;pointer-events:none}.riftan-token-weapon{display:grid;grid-template-columns:32px minmax(0,1fr);gap:4px 8px;padding:7px;background:rgba(18,18,20,.95);border:1px solid #8b7548;border-radius:4px;color:#eadfcb;text-shadow:none;font-size:12px}.riftan-token-weapon img{width:32px;height:32px;object-fit:contain;grid-row:1/3;border:0}.riftan-token-weapon strong{white-space:normal;overflow-wrap:anywhere;text-align:left}.riftan-ammo{position:relative;height:14px;background:#080a0e;grid-column:2;overflow:hidden;border-radius:2px}.riftan-ammo span{position:absolute;inset:0 auto 0 0;background:#8b7548}.riftan-ammo b{position:relative;display:block;text-align:center;font:11px/14px sans-serif;color:white}

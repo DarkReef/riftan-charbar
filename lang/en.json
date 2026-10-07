@@ -48,5 +48,6 @@
   "RIFTAN_CHARBAR.CYCLE": "A container cannot contain itself or an ancestor",
   "RIFTAN_CHARBAR.CAPACITY_ERROR": "Container capacity exceeded",
   "RIFTAN_CHARBAR.INVALID_MONEY": "Enter a finite nonnegative amount",
-  "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Choose one container, with quantity one"
+  "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Choose one container, with quantity one",
+  "RIFTAN_CHARBAR.AMMO": "Ammunition"
 }

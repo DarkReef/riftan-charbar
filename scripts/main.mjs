@@ -1,3 +1,5 @@
+import {registerWeaponHUD} from './token-weapons.mjs';
+Hooks.once('ready',registerWeaponHUD);
 import {validateRequest, canRespond, acceptedResponses} from './requests.mjs';
 
 const SCOPE = 'riftan-charbar';
