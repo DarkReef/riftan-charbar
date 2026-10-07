@@ -54,5 +54,8 @@
   "RIFTAN_CHARBAR.REQUEST_TARGETS": "Запрос целям",
   "RIFTAN_CHARBAR.REQUEST_SELECTED": "Запрос выделенным",
   "RIFTAN_CHARBAR.DIFFICULTY": "Сложность (бонус/штраф)",
-  "RIFTAN_CHARBAR.COMPACT_BAR": "Компактная панель персонажей"
+  "RIFTAN_CHARBAR.COMPACT_BAR": "Компактная панель персонажей",
+  "RIFTAN_CHARBAR.DRAG_BAR": "Перетащить панель (стрелки — сдвиг на 10 px)",
+  "RIFTAN_CHARBAR.TOTAL_MODIFIER": "Итоговый модификатор",
+  "RIFTAN_CHARBAR.UPDATE_SYSTEM": "Обновите Apex Heresy RU для встроенных результатов запроса."
 }

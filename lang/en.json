@@ -54,5 +54,8 @@
   "RIFTAN_CHARBAR.REQUEST_TARGETS": "Request targets",
   "RIFTAN_CHARBAR.REQUEST_SELECTED": "Request selected",
   "RIFTAN_CHARBAR.DIFFICULTY": "Difficulty (bonus/penalty)",
-  "RIFTAN_CHARBAR.COMPACT_BAR": "Compact token bar"
+  "RIFTAN_CHARBAR.COMPACT_BAR": "Compact token bar",
+  "RIFTAN_CHARBAR.DRAG_BAR": "Move bar (arrow keys: 10 px)",
+  "RIFTAN_CHARBAR.TOTAL_MODIFIER": "Total modifier",
+  "RIFTAN_CHARBAR.UPDATE_SYSTEM": "Update Apex Heresy RU to use inline request results."
 }

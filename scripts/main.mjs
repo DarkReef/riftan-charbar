@@ -1,3 +1,4 @@
+import {responseFromRoll,resultLabel} from './inline-results.mjs';
 import {renderTokenBar} from './token-bar.mjs';
 import {registerWeaponHUD} from './token-weapons.mjs';
 Hooks.once('ready',registerWeaponHUD);
@@ -16,6 +17,7 @@ const responding = new Set();
 let panel;
 const refreshBar=()=>renderTokenBar({actors,open:openPartyPanel,request:tokens=>requestDialog(targetActors(tokens))});
 Hooks.once('init',()=>game.settings.register(SCOPE,'compactBar',{name:'RIFTAN_CHARBAR.COMPACT_BAR',scope:'client',config:true,type:Boolean,default:true,onChange:refreshBar}));
+Hooks.once('init',()=>game.settings.register(SCOPE,'barPosition',{scope:'client',config:false,type:Object,default:null}));
 function owned(actor) { if (!actor?.isOwner && !game.user.isGM) throw new Error(t('NO_PERMISSION')); }
 function actors() {
     const result = new Map();
@@ -35,7 +37,7 @@ function requestHTML(message, request) {
     return `<section class="dh-party-request"><h3>${esc(t('REQUEST'))}: ${esc(request.label)}</h3><p>${esc(request.reason)} (${esc(t('DIFFICULTY'))}: ${Number(request.difficulty)||0}; ${esc(t('MODIFIER'))}: ${request.modifier >= 0 ? '+' : ''}${request.modifier})</p>
         ${request.actorUuids.map(uuid => {
             const actor = actorFrom(uuid), response = result.get(uuid);
-            return `<div>${esc(actor?.name ?? t('MISSING_ACTOR'))}: ${response ? `${response.roll} / ${response.target} — ${esc(t(response.success ? 'SUCCESS' : 'FAILURE'))} (${response.degrees})`
+            return `<div>${esc(actor?.name ?? t('MISSING_ACTOR'))}: ${response ? `<span class="riftan-inline-result ${response.success?'success':'failure'}" tabindex="0" title="${esc(`${response.roll}/${response.target}; ${t('MODIFIER')}: ${response.requestedModifier??request.modifier} → ${response.appliedModifier??request.modifier}; ${t('DIFFICULTY')}: ${response.requestedDifficulty??request.difficulty??0} → ${response.appliedDifficulty??request.difficulty??0}; ${t('TOTAL_MODIFIER')}: ${response.totalModifier??'—'}`)}">${esc(resultLabel(response,game.i18n.lang))}</span>`
                 : `<button type="button" data-party-roll="${esc(uuid)}" ${canRespond(request, actor, game.user) ? '' : 'disabled'}>${esc(t(request.closed ? 'CLOSED' : 'ROLL'))}</button>`}</div>`;
         }).join('')}${game.user.isGM && !request.closed ? `<button type="button" data-party-close>${esc(t('CLOSE_REQUEST'))}</button>` : ''}</section>`;
 }
@@ -64,15 +66,9 @@ export async function respondCheck(messageId, actorUuid) {
         const checked=validateRequest({...request,...chosen});
         const current=message.getFlag(SCOPE,'partyRequest');
         if(!canRespond(current,actor,game.user)||responses(message,current).has(actorUuid))return;
-        const roll = await game.darkHeresy.api.rollTest({actorUuid, characteristic:request.characteristic, skill:request.skill, modifier:checked.modifier+checked.difficulty, dialog:false});
-        if (roll.status !== 'resolved') return;
-        const data = roll.context;
-        const response = {requestId:messageId, actorUuid, requestedModifier:request.modifier,requestedDifficulty:request.difficulty??0,appliedModifier:checked.modifier,appliedDifficulty:checked.difficulty, roll:Number(data.result), target:Number(data.target.final),
-            success:!!data.flags.isSuccess, degrees:Number(data.flags.isSuccess ? data.dos : data.dof)};
-        const chat = {content:`<p>${esc(actor.name)}: ${esc(request.label)} — ${response.roll}/${response.target} · ${esc(t('MODIFIER'))}: ${request.modifier} → ${checked.modifier}; ${esc(t('DIFFICULTY'))}: ${request.difficulty??0} → ${checked.difficulty}</p>`,
-            speaker:ChatMessage.getSpeaker({actor}), flags:{[SCOPE]:{partyResponse:response}}};
-        ChatMessage.applyRollMode(chat, game.settings.get('core','rollMode'));
-        await ChatMessage.create(chat);
+        if(!game.darkHeresy.api.supportsRollMessageFlags)throw new Error(t('UPDATE_SYSTEM'));
+        const metadata={requestId:messageId,actorUuid,requestedModifier:request.modifier,requestedDifficulty:request.difficulty??0,appliedModifier:checked.modifier,appliedDifficulty:checked.difficulty};
+        await game.darkHeresy.api.rollTest({actorUuid,characteristic:request.characteristic,skill:request.skill,modifier:checked.modifier+checked.difficulty,dialog:false,messageFlags:{[SCOPE]:{requestRoll:metadata}}});
     } finally { responding.delete(key); }
 }
 export function openPartyPanel() { return panel?.render(true); }
@@ -163,6 +159,9 @@ Hooks.on('getSceneControlButtons', controls => {
     controls.tokens.tools.riftanCharbar = {name:'riftanCharbar',title:'RIFTAN_CHARBAR.TITLE',icon:'fa-solid fa-users',order:95,button:true,onChange:openPartyPanel};
 });
 Hooks.on('renderChatMessageHTML', (message, html) => {
+    const inline=message.getFlag(SCOPE,'partyResponse');
+    const parent=inline&&game.messages.get(inline.requestId);
+    if(inline&&message.getFlag(SCOPE,'requestRoll')&&parent?.author?.isGM&&parent.visible!==false&&parent.isContentVisible!==false&&responses(parent,parent.getFlag(SCOPE,'partyRequest')).has(inline.actorUuid)){html.hidden=true;html.style.display='none';return;}
     const request = message.getFlag(SCOPE,'partyRequest');
     if (!request || !message.author?.isGM) return;
     const body = html.querySelector('.message-content');
@@ -182,6 +181,11 @@ Hooks.on('createChatMessage', message => { if (message.getFlag(SCOPE,'partyRespo
 // Make native check cards reliable on unmodified 1.4.2 as well as the RU fork.
 Hooks.on('preCreateChatMessage', (message, data) => {
     const roll = message.getFlag('dark-heresy','rollData');
+    const metadata=message.getFlag(SCOPE,'requestRoll');
+    if(metadata&&roll){const parent=game.messages.get(metadata.requestId),request=parent?.getFlag(SCOPE,'partyRequest'),actor=actorFrom(roll.actorUuid);
+      if(!parent?.author?.isGM||!canRespond(request,actor,game.user))return false;
+      message.updateSource({['flags.'+SCOPE+'.partyResponse']:responseFromRoll(metadata,roll)});
+    }
     if (!roll?.actorUuid) return;
     const actor = fromUuidSync(roll.actorUuid);
     if (!actor) return;
