@@ -51,3 +51,7 @@ https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json
 ```
 
 Манифест и ZIP доступны без авторизации. Для обновления используйте штатную проверку обновлений Foundry. Рекомендуемая система — Apex Heresy RU 1.5.3; система устанавливается отдельно.
+
+## Поддержка проекта
+
+[План поддержки, совместимость и ограничения проверок](docs/maintenance.md).
