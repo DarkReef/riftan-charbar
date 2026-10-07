@@ -48,5 +48,6 @@
   "RIFTAN_CHARBAR.CYCLE": "Нельзя вложить контейнер в себя или свой дочерний контейнер",
   "RIFTAN_CHARBAR.CAPACITY_ERROR": "Превышена вместимость контейнера",
   "RIFTAN_CHARBAR.INVALID_MONEY": "Введите конечную неотрицательную сумму",
-  "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Выберите контейнер в одном экземпляре"
+  "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Выберите контейнер в одном экземпляре",
+  "RIFTAN_CHARBAR.AMMO": "Боеприпасы"
 }
