@@ -1,9 +1,11 @@
-export function validateRequest({actorUuids, characteristic, skill, modifier = 0}) {
+export function validateRequest({actorUuids, characteristic, skill, modifier = 0, difficulty = 0}) {
     if (!Array.isArray(actorUuids) || !actorUuids.length || actorUuids.length > 100 || actorUuids.some(uuid => typeof uuid !== 'string')) throw new Error('Select characters');
     if (!!characteristic === !!skill || typeof (characteristic || skill) !== 'string') throw new Error('Select one test');
     if (!Number.isFinite(Number(modifier)) || Math.abs(Number(modifier)) > 1000) throw new Error('Invalid modifier');
-    return {actorUuids:[...new Set(actorUuids)], characteristic:characteristic || '', skill:skill || '', modifier:Number(modifier)};
+    if (!Number.isFinite(Number(difficulty)) || Math.abs(Number(difficulty)) > 60) throw new Error('Invalid difficulty');
+    return {actorUuids:[...new Set(actorUuids)], characteristic:characteristic || '', skill:skill || '', modifier:Number(modifier),difficulty:Number(difficulty)};
 }
+export function targetActors(tokens){return [...new Set([...tokens].map(token=>token.actor?.uuid).filter(Boolean))];}
 export function canRespond(request, actor, user) {
     return !!request && !request.closed && request.actorUuids.includes(actor?.uuid)
         && (user?.isGM || actor?.testUserPermission?.(user, 'OWNER'));

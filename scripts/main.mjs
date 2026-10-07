@@ -1,6 +1,7 @@
+import {renderTokenBar} from './token-bar.mjs';
 import {registerWeaponHUD} from './token-weapons.mjs';
 Hooks.once('ready',registerWeaponHUD);
-import {validateRequest, canRespond, acceptedResponses} from './requests.mjs';
+import {validateRequest, canRespond, acceptedResponses, targetActors} from './requests.mjs';
 
 const SCOPE = 'riftan-charbar';
 const esc = value => foundry.utils.escapeHTML(String(value ?? ''));
@@ -13,6 +14,8 @@ const errorText = error => {
 const actorFrom = uuid => fromUuidSync(uuid);
 const responding = new Set();
 let panel;
+const refreshBar=()=>renderTokenBar({actors,open:openPartyPanel,request:tokens=>requestDialog(targetActors(tokens))});
+Hooks.once('init',()=>game.settings.register(SCOPE,'compactBar',{name:'RIFTAN_CHARBAR.COMPACT_BAR',scope:'client',config:true,type:Boolean,default:true,onChange:refreshBar}));
 function owned(actor) { if (!actor?.isOwner && !game.user.isGM) throw new Error(t('NO_PERMISSION')); }
 function actors() {
     const result = new Map();
@@ -29,7 +32,7 @@ function responses(message, request) {
 }
 function requestHTML(message, request) {
     const result = responses(message, request);
-    return `<section class="dh-party-request"><h3>${esc(t('REQUEST'))}: ${esc(request.label)}</h3><p>${esc(request.reason)} (${request.modifier >= 0 ? '+' : ''}${request.modifier})</p>
+    return `<section class="dh-party-request"><h3>${esc(t('REQUEST'))}: ${esc(request.label)}</h3><p>${esc(request.reason)} (${esc(t('DIFFICULTY'))}: ${Number(request.difficulty)||0}; ${esc(t('MODIFIER'))}: ${request.modifier >= 0 ? '+' : ''}${request.modifier})</p>
         ${request.actorUuids.map(uuid => {
             const actor = actorFrom(uuid), response = result.get(uuid);
             return `<div>${esc(actor?.name ?? t('MISSING_ACTOR'))}: ${response ? `${response.roll} / ${response.target} — ${esc(t(response.success ? 'SUCCESS' : 'FAILURE'))} (${response.degrees})`
@@ -56,12 +59,17 @@ export async function respondCheck(messageId, actorUuid) {
         const actor = await fromUuid(actorUuid);
         if (!message?.author?.isGM || !canRespond(request, actor, game.user)) throw new Error(t('NO_PERMISSION'));
         if (responses(message, request).has(actorUuid)) return;
-        const roll = await game.darkHeresy.api.rollTest({actorUuid, characteristic:request.characteristic, skill:request.skill, modifier:request.modifier, dialog:false});
+        const chosen=await foundry.applications.api.DialogV2.prompt({window:{title:request.label},content:`<div class="dh-party-form"><p>${esc(request.reason)}</p><label>${esc(t('DIFFICULTY'))}<input name="difficulty" type="number" min="-60" max="60" value="${Number(request.difficulty)||0}"></label><label>${esc(t('MODIFIER'))}<input name="modifier" type="number" min="-1000" max="1000" value="${request.modifier}"></label></div>`,rejectClose:false,ok:{label:t('ROLL'),callback:(_e,b)=>({difficulty:Number(b.form.elements.difficulty.value),modifier:Number(b.form.elements.modifier.value)})}});
+        if(!chosen)return;
+        const checked=validateRequest({...request,...chosen});
+        const current=message.getFlag(SCOPE,'partyRequest');
+        if(!canRespond(current,actor,game.user)||responses(message,current).has(actorUuid))return;
+        const roll = await game.darkHeresy.api.rollTest({actorUuid, characteristic:request.characteristic, skill:request.skill, modifier:checked.modifier+checked.difficulty, dialog:false});
         if (roll.status !== 'resolved') return;
         const data = roll.context;
-        const response = {requestId:messageId, actorUuid, roll:Number(data.result), target:Number(data.target.final),
+        const response = {requestId:messageId, actorUuid, requestedModifier:request.modifier,requestedDifficulty:request.difficulty??0,appliedModifier:checked.modifier,appliedDifficulty:checked.difficulty, roll:Number(data.result), target:Number(data.target.final),
             success:!!data.flags.isSuccess, degrees:Number(data.flags.isSuccess ? data.dos : data.dof)};
-        const chat = {content:`<p>${esc(actor.name)}: ${esc(request.label)} — ${response.roll}/${response.target}</p>`,
+        const chat = {content:`<p>${esc(actor.name)}: ${esc(request.label)} — ${response.roll}/${response.target} · ${esc(t('MODIFIER'))}: ${request.modifier} → ${checked.modifier}; ${esc(t('DIFFICULTY'))}: ${request.difficulty??0} → ${checked.difficulty}</p>`,
             speaker:ChatMessage.getSpeaker({actor}), flags:{[SCOPE]:{partyResponse:response}}};
         ChatMessage.applyRollMode(chat, game.settings.get('core','rollMode'));
         await ChatMessage.create(chat);
@@ -127,10 +135,10 @@ async function requestDialog(actorUuids) {
     const options = [...Object.entries(actor.characteristics ?? {}).map(([key,value]) => [`c:${key}`,value.label ?? key]),
         ...Object.entries(actor.skills ?? {}).filter(([,value])=>!value.isSpecialist).map(([key,value]) => [`s:${key}`,value.label ?? key])];
     return foundry.applications.api.DialogV2.prompt({window:{title:t('REQUEST')},content:`<div class="dh-party-form"><label>${esc(t('TEST'))}<select name="test">${options.map(([key,label]) => `<option value="${esc(key)}">${esc(game.i18n.localize(label))}</option>`).join('')}</select></label>
-        <label>${esc(t('MODIFIER'))}<input name="modifier" type="number" value="0"></label><label>${esc(t('REASON'))}<input name="reason" maxlength="500"></label></div>`,
+        <label>${esc(t('DIFFICULTY'))}<select name="difficulty">${[60,50,40,30,20,10,0,-10,-20,-30,-40,-50,-60].map(n=>`<option value="${n}" ${n===0?'selected':''}>${n>0?'+':''}${n}</option>`).join('')}</select></label><label>${esc(t('MODIFIER'))}<input name="modifier" type="number" value="0"></label><label>${esc(t('REASON'))}<input name="reason" maxlength="500"></label></div>`,
         ok:{label:t('REQUEST'),callback:(_event,button) => {
             const form = button.form, [type,key] = form.elements.test.value.split(':');
-            return requestChecks({actorUuids,characteristic:type==='c'?key:'',skill:type==='s'?key:'',modifier:form.elements.modifier.value,reason:form.elements.reason.value});
+            return requestChecks({actorUuids,characteristic:type==='c'?key:'',skill:type==='s'?key:'',modifier:form.elements.modifier.value,difficulty:form.elements.difficulty.value,reason:form.elements.reason.value});
         }}});
 }
 async function conditionDialog(actor) {
@@ -141,12 +149,15 @@ async function conditionDialog(actor) {
 Hooks.once('ready', () => {
     if (!game.darkHeresy?.api?.rollTest) {ui.notifications.error('Riftan Charbar requires Apex Heresy API v1 (1.4.2 or later).'); return;}
     createApplications();
+    refreshBar();
     const api = {version:1, open:openPartyPanel, requestChecks, respondCheck};
     game.riftanCharbar = api; game.modules.get(SCOPE).api = api;
-    for (const hook of ['updateActor','createItem','updateItem','deleteItem','createActiveEffect','updateActiveEffect','deleteActiveEffect','updateUser','canvasReady','controlToken']) Hooks.on(hook, () => {
+    for (const hook of ['updateActor','createItem','updateItem','deleteItem','createActiveEffect','updateActiveEffect','deleteActiveEffect','updateUser','canvasReady','controlToken','targetToken','createToken','deleteToken','updateToken']) Hooks.on(hook, () => {
         if (panel?.rendered) panel.render(true);
+        refreshBar();
     });
 });
+Hooks.on('canvasTearDown',()=>document.getElementById('riftan-token-bar')?.remove());
 Hooks.on('getSceneControlButtons', controls => {
     if (!controls.tokens?.tools) return;
     controls.tokens.tools.riftanCharbar = {name:'riftanCharbar',title:'RIFTAN_CHARBAR.TITLE',icon:'fa-solid fa-users',order:95,button:true,onChange:openPartyPanel};
