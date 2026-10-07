@@ -1,7 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRequest,canRespond,acceptedResponses} from '../scripts/requests.mjs';
+import {validateRequest,canRespond,acceptedResponses,targetActors} from '../scripts/requests.mjs';
 const actor={uuid:'Actor.a',testUserPermission:user=>user.id==='owner'};
+test('multi-target selection deduplicates linked actors and preserves synthetic actors',()=>{
+ assert.deepEqual(targetActors([{actor},{actor},{actor:{uuid:'Scene.s.Token.t.Actor.a'}},{}]),['Actor.a','Scene.s.Token.t.Actor.a']);
+});
+test('difficulty is separate from modifier and bounded',()=>{
+ const input={actorUuids:['Actor.a'],skill:'dodge',modifier:15,difficulty:-20};
+ const request=validateRequest(input);assert.equal(request.modifier+request.difficulty,-5);
+ assert.throws(()=>validateRequest({...input,difficulty:Infinity}));
+ assert.throws(()=>validateRequest({...input,difficulty:61}));
+});
 test('requests require one valid test, bounded modifier and unique recipients',()=>{
     assert.throws(()=>validateRequest({actorUuids:[],skill:'dodge'}));
     assert.throws(()=>validateRequest({actorUuids:['Actor.a'],characteristic:'agility',skill:'dodge'}));

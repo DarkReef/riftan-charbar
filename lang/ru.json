@@ -49,5 +49,10 @@
   "RIFTAN_CHARBAR.CAPACITY_ERROR": "Превышена вместимость контейнера",
   "RIFTAN_CHARBAR.INVALID_MONEY": "Введите конечную неотрицательную сумму",
   "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Выберите контейнер в одном экземпляре",
-  "RIFTAN_CHARBAR.AMMO": "Боеприпасы"
+  "RIFTAN_CHARBAR.AMMO": "Боеприпасы",
+  "RIFTAN_CHARBAR.OPEN_PANEL": "Группа",
+  "RIFTAN_CHARBAR.REQUEST_TARGETS": "Запрос целям",
+  "RIFTAN_CHARBAR.REQUEST_SELECTED": "Запрос выделенным",
+  "RIFTAN_CHARBAR.DIFFICULTY": "Сложность (бонус/штраф)",
+  "RIFTAN_CHARBAR.COMPACT_BAR": "Компактная панель персонажей"
 }

@@ -49,5 +49,10 @@
   "RIFTAN_CHARBAR.CAPACITY_ERROR": "Container capacity exceeded",
   "RIFTAN_CHARBAR.INVALID_MONEY": "Enter a finite nonnegative amount",
   "RIFTAN_CHARBAR.SINGLE_CONTAINER": "Choose one container, with quantity one",
-  "RIFTAN_CHARBAR.AMMO": "Ammunition"
+  "RIFTAN_CHARBAR.AMMO": "Ammunition",
+  "RIFTAN_CHARBAR.OPEN_PANEL": "Party",
+  "RIFTAN_CHARBAR.REQUEST_TARGETS": "Request targets",
+  "RIFTAN_CHARBAR.REQUEST_SELECTED": "Request selected",
+  "RIFTAN_CHARBAR.DIFFICULTY": "Difficulty (bonus/penalty)",
+  "RIFTAN_CHARBAR.COMPACT_BAR": "Compact token bar"
 }
