@@ -1,6 +1,7 @@
 import {renderTokenBar} from './token-bar.mjs';
+import {isSupportedSystem,getSystemFlag} from './system-identity.mjs';
 import {registerWeaponHUD} from './token-weapons.mjs';
-Hooks.once('ready',registerWeaponHUD);
+Hooks.once('ready',()=>{if(isSupportedSystem())registerWeaponHUD();});
 import {validateRequest, canRespond, acceptedResponses, targetActors} from './requests.mjs';
 
 const SCOPE = 'riftan-charbar';
@@ -147,6 +148,7 @@ async function conditionDialog(actor) {
         ok:{callback:(_event, button) => game.darkHeresy.api.applyCondition({actorUuid:actor.uuid,condition:button.form.elements.condition.value,active:button.form.elements.active.checked,rounds:Number(button.form.elements.rounds.value)})}});
 }
 Hooks.once('ready', () => {
+    if (!isSupportedSystem()) return;
     if (!game.darkHeresy?.api?.rollTest) {ui.notifications.error('Riftan Charbar requires Apex Heresy API v1 (1.4.2 or later).'); return;}
     createApplications();
     refreshBar();
@@ -181,7 +183,7 @@ Hooks.on('createChatMessage', message => { if (message.getFlag(SCOPE,'partyRespo
 
 // Make native check cards reliable on unmodified 1.4.2 as well as the RU fork.
 Hooks.on('preCreateChatMessage', (message, data) => {
-    const roll = message.getFlag('dark-heresy','rollData');
+    const roll = getSystemFlag(message,'rollData');
     if (!roll?.actorUuid) return;
     const actor = fromUuidSync(roll.actorUuid);
     if (!actor) return;
