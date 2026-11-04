@@ -2,7 +2,7 @@
   "id": "riftan-charbar",
   "title": "Riftan Charbar",
   "description": "Character panel and GM check requests for Apex Heresy.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -36,8 +36,17 @@
   "relationships": {
     "systems": [
       {
+        "id": "apex-heresy-ru",
+        "type": "system",
+        "manifest": "https://github.com/DarkReef/Apex-Heresy-Ru/releases/latest/download/system.json",
+        "compatibility": {
+          "minimum": "1.6.0"
+        }
+      },
+      {
         "id": "dark-heresy",
         "type": "system",
+        "manifest": "https://github.com/DarkReef/Apex-Heresy-Ru/releases/download/v1.5.6-ru/system.json",
         "compatibility": {
           "minimum": "1.4.2"
         }
@@ -46,7 +55,7 @@
   },
   "url": "https://github.com/DarkReef/riftan-charbar",
   "manifest": "https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json",
-  "download": "https://github.com/DarkReef/riftan-charbar/releases/download/v0.1.4/riftan-charbar.zip",
+  "download": "https://github.com/DarkReef/riftan-charbar/releases/download/v0.1.5/riftan-charbar.zip",
   "license": "LICENSE",
   "readme": "https://github.com/DarkReef/riftan-charbar#readme"
 }

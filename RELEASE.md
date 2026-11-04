@@ -1,9 +1,9 @@
-# Riftan Charbar 0.1.0
+# Riftan Charbar 0.1.5
 
-Первый отдельный тестовый релиз для Foundry VTT 14 и Apex Heresy 1.4.2+.
+- Поддержка отдельного пакета Apex Heresy RU `apex-heresy-ru` 1.6.0+; прежний Apex Heresy `dark-heresy` 1.4.2+ с API v1 остаётся совместимым.
+- Панель оружия и персонажей запускается с обоими ID. Чтение сохранённых карточек бросков не требует регистрации прежнего ID пакета; данные и CSS сохранены.
+- Для нового ID указан манифест DarkReef; ссылка прежнего ID закреплена на релизе системы 1.5.6. Vendare не поддерживается.
 
-Установочный манифест: https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json
+Проверки: 10 автоматических тестов. Живая многопользовательская проверка Foundry VTT 14 после смены ID системы ещё требуется. Перенос мира выполняется по инструкции системы.
 
-Инструкция: https://github.com/DarkReef/riftan-charbar#readme
-
-Проверены автоматические тесты и DOM с имитацией Foundry. Проверка в реальном многопользовательском мире ещё требуется.
+Установка: https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json
