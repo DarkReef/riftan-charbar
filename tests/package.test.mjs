@@ -8,4 +8,5 @@ test('standalone manifest and locale parity',()=>{
  const en=read('../lang/en.json'),ru=read('../lang/ru.json');assert.deepEqual(Object.keys(en),Object.keys(ru));
  for(const key of Object.keys(en))assert.deepEqual(ru[key].match(/\{[^{}]+\}/g)??[],en[key].match(/\{[^{}]+\}/g)??[],key);
  assert.equal(m.manifest,'https://github.com/DarkReef/riftan-charbar/releases/latest/download/module.json');
+ assert.equal(m.download,`https://github.com/DarkReef/riftan-charbar/releases/download/v${m.version}/riftan-charbar.zip`);
 });

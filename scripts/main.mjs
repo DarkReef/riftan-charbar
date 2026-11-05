@@ -31,12 +31,24 @@ function actors() {
 function responses(message, request) {
     return acceptedResponses(game.messages.contents, message.id, request, actorFrom, id => game.users.get(id));
 }
+const signed = value => `${Number(value) > 0 ? '+' : ''}${Number(value) || 0}`;
+function responseLabel(response) {
+    const plural = new Intl.PluralRules(game.i18n.lang || 'en').select(response.degrees);
+    const form = plural === 'one' ? 'ONE' : plural === 'few' ? 'FEW' : 'OTHER';
+    return t(`DEGREE_${response.success ? 'SUCCESS' : 'FAILURE'}_${form}`).replace('{degrees}', String(response.degrees));
+}
+function responseDetails(response, request) {
+    return [`${response.roll} / ${response.target}`,
+        `${t('MODIFIER')}: ${signed(response.requestedModifier ?? request.modifier)} → ${signed(response.appliedModifier ?? request.modifier)}`,
+        `${t('DIFFICULTY')}: ${signed(response.requestedDifficulty ?? request.difficulty)} → ${signed(response.appliedDifficulty ?? request.difficulty)}`,
+        response.modifiers].filter(Boolean).join('\n');
+}
 function requestHTML(message, request) {
     const result = responses(message, request);
     return `<section class="dh-party-request"><h3>${esc(t('REQUEST'))}: ${esc(request.label)}</h3><p>${esc(request.reason)} (${esc(t('DIFFICULTY'))}: ${Number(request.difficulty)||0}; ${esc(t('MODIFIER'))}: ${request.modifier >= 0 ? '+' : ''}${request.modifier})</p>
         ${request.actorUuids.map(uuid => {
             const actor = actorFrom(uuid), response = result.get(uuid);
-            return `<div>${esc(actor?.name ?? t('MISSING_ACTOR'))}: ${response ? `${response.roll} / ${response.target} — ${esc(t(response.success ? 'SUCCESS' : 'FAILURE'))} (${response.degrees})`
+            return `<div>${esc(actor?.name ?? t('MISSING_ACTOR'))}: ${response ? `<span class="dh-party-result ${response.success ? 'success' : 'failure'}" title="${esc(responseDetails(response, request))}" tabindex="0">${esc(responseLabel(response))}</span>`
                 : `<button type="button" data-party-roll="${esc(uuid)}" ${canRespond(request, actor, game.user) ? '' : 'disabled'}>${esc(t(request.closed ? 'CLOSED' : 'ROLL'))}</button>`}</div>`;
         }).join('')}${game.user.isGM && !request.closed ? `<button type="button" data-party-close>${esc(t('CLOSE_REQUEST'))}</button>` : ''}</section>`;
 }
@@ -65,11 +77,12 @@ export async function respondCheck(messageId, actorUuid) {
         const checked=validateRequest({...request,...chosen});
         const current=message.getFlag(SCOPE,'partyRequest');
         if(!canRespond(current,actor,game.user)||responses(message,current).has(actorUuid))return;
-        const roll = await game.darkHeresy.api.rollTest({actorUuid, characteristic:request.characteristic, skill:request.skill, modifier:checked.modifier+checked.difficulty, dialog:false});
+        const roll = await game.darkHeresy.api.rollTest({actorUuid, characteristic:request.characteristic, skill:request.skill, modifier:checked.modifier+checked.difficulty, dialog:false, chat:false});
         if (roll.status !== 'resolved') return;
         const data = roll.context;
         const response = {requestId:messageId, actorUuid, requestedModifier:request.modifier,requestedDifficulty:request.difficulty??0,appliedModifier:checked.modifier,appliedDifficulty:checked.difficulty, roll:Number(data.result), target:Number(data.target.final),
-            success:!!data.flags.isSuccess, degrees:Number(data.flags.isSuccess ? data.dos : data.dof)};
+            success:!!data.flags.isSuccess, degrees:Number(data.flags.isSuccess ? data.dos : data.dof),
+            modifiers:[data.evasionSources || data.actorConditionSources, data.equipmentBonusSources].filter(Boolean).map(String).join('; ').slice(0,2000)};
         const chat = {content:`<p>${esc(actor.name)}: ${esc(request.label)} — ${response.roll}/${response.target} · ${esc(t('MODIFIER'))}: ${request.modifier} → ${checked.modifier}; ${esc(t('DIFFICULTY'))}: ${request.difficulty??0} → ${checked.difficulty}</p>`,
             speaker:ChatMessage.getSpeaker({actor}), flags:{[SCOPE]:{partyResponse:response}}};
         ChatMessage.applyRollMode(chat, game.settings.get('core','rollMode'));
@@ -165,21 +178,40 @@ Hooks.on('getSceneControlButtons', controls => {
     controls.tokens.tools.riftanCharbar = {name:'riftanCharbar',title:'RIFTAN_CHARBAR.TITLE',icon:'fa-solid fa-users',order:95,button:true,onChange:openPartyPanel};
 });
 Hooks.on('renderChatMessageHTML', (message, html) => {
+    // Keep player-authored documents as the ownership/visibility receipts, while
+    // showing their results only inside the original GM request.
+    if (message.getFlag(SCOPE,'partyResponse')) {
+        html.hidden = true;
+        html.style.display = 'none';
+        html.setAttribute('aria-hidden','true');
+        return;
+    }
     const request = message.getFlag(SCOPE,'partyRequest');
-    if (!request || !message.author?.isGM) return;
+    if (!request || !message.author?.isGM || message.isContentVisible === false) return;
     const body = html.querySelector('.message-content');
     if (!body) return;
     body.innerHTML = requestHTML(message,request);
     body.querySelectorAll('[data-party-roll]').forEach(button => button.addEventListener('click', async () => {
         button.disabled = true;
         try {await respondCheck(message.id,button.dataset.partyRoll);} catch(error) {ui.notifications.error(error.message);}
-        finally {ui.chat?.render(true);}
+        finally {await refreshRequest(message);}
     }));
     body.querySelector('[data-party-close]')?.addEventListener('click', async () => {
         if (game.user.isGM) await message.setFlag(SCOPE,'partyRequest',{...request,closed:true});
     });
 });
-Hooks.on('createChatMessage', message => { if (message.getFlag(SCOPE,'partyResponse')) ui.chat?.render(true); });
+function refreshRequest(message) {
+    const requestId = message.getFlag(SCOPE,'partyResponse')?.requestId;
+    const root = requestId ? game.messages.get(requestId) : message.getFlag(SCOPE,'partyRequest') ? game.messages.get(message.id) : null;
+    if (!root?.author?.isGM || !root.getFlag(SCOPE,'partyRequest')) return;
+    // Foundry v14 preserves existing message elements when ChatLog.render runs.
+    // updateMessage refreshes the card, its notification and the chat popout.
+    return Promise.resolve(ui.chat?.updateMessage(root, {notify:false})).catch(error => console.error('Riftan Charbar: request refresh failed', error));
+}
+Hooks.on('createChatMessage', message => {
+    if (message.getFlag(SCOPE,'partyResponse')) return refreshRequest(message);
+});
+for (const hook of ['updateChatMessage','deleteChatMessage']) Hooks.on(hook, refreshRequest);
 
 // Make native check cards reliable on unmodified 1.4.2 as well as the RU fork.
 Hooks.on('preCreateChatMessage', (message, data) => {
